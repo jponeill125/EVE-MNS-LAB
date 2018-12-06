@@ -1,0 +1,325 @@
+Current configuration : 8632 bytes
+!
+! Last configuration change at 18:07:54 EET Wed Dec 5 2018
+!
+version 15.5
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname Router
+!
+boot-start-marker
+boot-end-marker
+!
+!
+no logging console
+!
+no aaa new-model
+!
+!
+!
+bsd-client server url https://cloudsso.cisco.com/as/token.oauth2
+clock timezone EET 2 0
+mmi polling-interval 60
+no mmi auto-configure
+no mmi pvc
+mmi snmp-timeout 180
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+
+
+!
+!
+!
+!
+ip cef
+no ipv6 cef
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+!
+!
+cts logging verbose
+!
+!
+!
+redundancy
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface Loopback0
+ description *** Router ID ***
+ ip address 10.160.160.5 255.255.255.255
+!
+interface Ethernet0/0
+ description *** Link to bla-asr-01.mpls Gi0/0/0/0 ***
+ dampening
+ ip address 10.160.163.26 255.255.255.252
+ no ip redirects
+ no ip proxy-arp
+ ip router isis
+ carrier-delay msec 0
+ isis circuit-type level-2-only
+ isis network point-to-point
+ hold-queue 1500 in
+!
+interface Ethernet0/1
+ description *** Link to bla-asr-02.mpls Gi0/0/0/0 ***
+ dampening
+ ip address 10.160.163.30 255.255.255.252
+ no ip redirects
+ no ip proxy-arp
+ ip router isis
+ carrier-delay msec 0
+ isis circuit-type level-2-only
+ isis network point-to-point
+ hold-queue 1500 in
+!
+interface Ethernet0/2
+ no ip address
+ shutdown
+!
+interface Ethernet0/3
+ no ip address
+ shutdown
+!
+interface Ethernet1/0
+ no ip address
+ shutdown
+!
+interface Ethernet1/1
+ no ip address
+ shutdown
+!
+interface Ethernet1/2
+ no ip address
+ shutdown
+!
+interface Ethernet1/3
+ no ip address
+ shutdown
+!
+router isis
+ net 49.1101.0000.0000.0005.00
+ is-type level-2-only
+ ispf level-2
+ metric-style wide level-2
+ fast-flood 15
+ set-overload-bit
+ max-lsp-lifetime 65535
+ lsp-refresh-interval 65000
+ spf-interval 5 10 20
+ prc-interval 5 10 20
+ lsp-gen-interval 5 1 20
+ no hello padding
+ log-adjacency-changes all
+ passive-interface Loopback0
+!
+router bgp 13280
+ template peer-policy CPN-PEER-POLICY
+  advertisement-interval 0
+  send-community both
+ exit-peer-policy
+ !
+ template peer-policy CPN-RR-CLIENT-PEER-POLICY
+  route-reflector-client
+  advertisement-interval 0
+  inherit peer-policy CPN-PEER-POLICY 10
+ exit-peer-policy
+ !
+ template peer-policy CPN_GREEN_MPLS_OPTIONC_PEER_SESSION_POLICY
+  advertisement-interval 0
+  next-hop-unchanged
+  send-community both
+ exit-peer-policy
+ !
+ template peer-session CPN-PEER-SESSION
+  remote-as 13280
+  update-source Loopback0
+  timers 5 15
+ exit-peer-session
+ !
+ template peer-session CPN-RR-CLIENT-PEER-SESSION
+  remote-as 13280
+  update-source Loopback0
+  timers 5 15
+ exit-peer-session
+ !
+ template peer-session CPN_GREEN_MPLS_OPTIONC_PEER_SESSION
+  remote-as 34218
+  ebgp-multihop 255
+  update-source Loopback0
+  timers 5 15
+ exit-peer-session
+ !
+ bgp router-id 10.160.160.5
+ bgp always-compare-med
+ bgp cluster-id 1
+ bgp log-neighbor-changes
+ bgp deterministic-med
+ bgp bestpath med missing-as-worst
+ no bgp default ipv4-unicast
+ neighbor 10.160.160.10 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.160.10 description BLA-ASR-01
+ neighbor 10.160.160.11 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.160.11 description BLA-ASR-02
+ neighbor 10.160.160.21 inherit peer-session CPN-PEER-SESSION
+ neighbor 10.160.160.21 description WIL-RR-01
+ neighbor 10.160.160.26 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.160.26 description WIL-ASR-01
+ neighbor 10.160.160.27 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.160.27 description WIL-ASR-02
+ neighbor 10.160.160.41 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.160.41 description BAL-ASR-01
+ neighbor 10.160.160.42 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.160.42 description BAL-ASR-02
+ neighbor 10.160.160.57 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.160.57 description LIM-ASR-01
+ neighbor 10.160.160.58 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.160.58 description LIM-ASR-02
+ neighbor 10.160.165.1 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.165.4 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.165.4 description THN-ASR-01
+ neighbor 10.160.165.5 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.165.5 description THN-ASR-01
+ neighbor 10.160.165.6 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.165.6 description DN2M4808
+ neighbor 10.160.165.7 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.165.7 description DN2M4809
+ neighbor 10.160.165.8 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.165.8 description TC0A9W01
+ neighbor 10.160.165.9 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.165.9 description TC0A9W02
+ neighbor 10.160.165.10 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.165.10 description DN2Q10K01
+ neighbor 10.160.165.11 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.165.11 description DN2Q10K02
+ neighbor 10.160.165.12 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.165.12 description TC0Q10K01
+ neighbor 10.160.165.13 inherit peer-session CPN-RR-CLIENT-PEER-SESSION
+ neighbor 10.160.165.13 description TC0Q10K02
+ !
+ address-family ipv4
+  bgp nexthop trigger delay 0
+ exit-address-family
+ !
+ address-family vpnv4
+  neighbor 10.160.160.10 activate
+  neighbor 10.160.160.10 send-community both
+  neighbor 10.160.160.10 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.160.11 activate
+  neighbor 10.160.160.11 send-community both
+  neighbor 10.160.160.11 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.160.21 activate
+  neighbor 10.160.160.21 send-community both
+  neighbor 10.160.160.21 inherit peer-policy CPN-PEER-POLICY
+  neighbor 10.160.160.26 activate
+  neighbor 10.160.160.26 send-community both
+  neighbor 10.160.160.26 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.160.27 activate
+  neighbor 10.160.160.27 send-community both
+  neighbor 10.160.160.27 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.160.41 activate
+  neighbor 10.160.160.41 send-community both
+  neighbor 10.160.160.41 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.160.42 activate
+  neighbor 10.160.160.42 send-community both
+  neighbor 10.160.160.42 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.160.57 activate
+  neighbor 10.160.160.57 send-community both
+  neighbor 10.160.160.57 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.160.58 activate
+  neighbor 10.160.160.58 send-community both
+  neighbor 10.160.160.58 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.165.1 activate
+  neighbor 10.160.165.1 send-community both
+  neighbor 10.160.165.1 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.165.4 activate
+  neighbor 10.160.165.4 send-community both
+  neighbor 10.160.165.4 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.165.5 activate
+  neighbor 10.160.165.5 send-community both
+  neighbor 10.160.165.5 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.165.6 activate
+  neighbor 10.160.165.6 send-community both
+  neighbor 10.160.165.6 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.165.7 activate
+  neighbor 10.160.165.7 send-community both
+  neighbor 10.160.165.7 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.165.8 activate
+  neighbor 10.160.165.8 send-community both
+  neighbor 10.160.165.8 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.165.9 activate
+  neighbor 10.160.165.9 send-community both
+  neighbor 10.160.165.9 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.165.10 activate
+  neighbor 10.160.165.10 send-community both
+  neighbor 10.160.165.10 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.165.11 activate
+  neighbor 10.160.165.11 send-community both
+  neighbor 10.160.165.11 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.165.12 activate
+  neighbor 10.160.165.12 send-community both
+  neighbor 10.160.165.12 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+  neighbor 10.160.165.13 activate
+  neighbor 10.160.165.13 send-community both
+  neighbor 10.160.165.13 inherit peer-policy CPN-RR-CLIENT-PEER-POLICY
+ exit-address-family
+!
+ip forward-protocol nd
+!
+ip bgp-community new-format
+!
+no ip http server
+no ip http secure-server
+ip route 172.26.11.186 255.255.255.255 192.168.197.28
+!
+!
+!
+!
+control-plane
+!
+!
+!
+!
+!
+!
+!
+!
+line con 0
+ logging synchronous
+line aux 0
+line vty 0 4
+ login
+ transport input none
+!
+!
+end
