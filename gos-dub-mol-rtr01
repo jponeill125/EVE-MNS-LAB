@@ -1,0 +1,162 @@
+!
+! Last configuration change at 17:31:44 EET Wed Dec 5 2018
+!
+version 15.5
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname gos-dub-mol-rtr01
+!
+boot-start-marker
+boot-end-marker
+!
+!
+!
+no aaa new-model
+!
+!
+!
+bsd-client server url https://cloudsso.cisco.com/as/token.oauth2
+clock timezone EET 2 0
+mmi polling-interval 60
+no mmi auto-configure
+no mmi pvc
+mmi snmp-timeout 180
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+
+
+!
+!
+!
+!
+ip cef
+no ipv6 cef
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+!
+!
+cts logging verbose
+!
+!
+!
+redundancy
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface Loopback0
+ ip address 1.1.1.1 255.255.255.252
+!
+interface Loopback4
+ ip address 1.1.1.5 255.255.255.252
+!
+interface Loopback8
+ ip address 1.1.1.9 255.255.255.252
+!
+interface Loopback12
+ ip address 1.1.1.13 255.255.255.252
+!
+interface Loopback16
+ ip address 1.1.1.17 255.255.255.252
+!
+interface Loopback20
+ ip address 1.1.1.21 255.255.255.252
+!
+interface Ethernet0/0
+ description ***  Primary WAN - Circuit Ref: ESDGETHG46709 Vl 1142 ***
+ no ip address
+ no cdp enable
+!
+interface Ethernet0/0.100
+ description *** L3 for MNS to WIL-ASR-02.mpls GigabitEthernet0/0/0/6.2772100***
+ encapsulation dot1Q 100
+ ip address 89.204.248.14 255.255.255.252
+ no ip redirects
+ no ip unreachables
+ no ip proxy-arp
+!
+interface Ethernet0/1
+ no ip address
+ shutdown
+!
+interface Ethernet0/2
+ no ip address
+ shutdown
+!
+interface Ethernet0/3
+ no ip address
+ shutdown
+!
+router bgp 64512
+ bgp log-neighbor-changes
+ bgp graceful-restart restart-time 120
+ bgp graceful-restart stalepath-time 360
+ bgp graceful-restart
+ network 1.1.1.0 mask 255.255.255.252
+ network 1.1.1.4 mask 255.255.255.252
+ network 1.1.1.8 mask 255.255.255.252
+ network 1.1.1.12 mask 255.255.255.252
+ network 1.1.1.16 mask 255.255.255.252
+ network 1.1.1.20 mask 255.255.255.252
+ neighbor PEERGROUP-MNS peer-group
+ neighbor PEERGROUP-MNS remote-as 13280
+ neighbor PEERGROUP-MNS soft-reconfiguration inbound
+ neighbor 89.204.248.13 peer-group PEERGROUP-MNS
+ neighbor 89.204.248.13 password O2MNS
+!
+ip forward-protocol nd
+!
+!
+no ip http server
+no ip http secure-server
+!
+!
+!
+!
+control-plane
+!
+!
+!
+!
+!
+!
+!
+!
+line con 0
+ logging synchronous
+line aux 0
+line vty 0 4
+ login
+ transport input none
+!
+!
+end
