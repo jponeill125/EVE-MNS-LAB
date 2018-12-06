@@ -1,0 +1,257 @@
+!! IOS XR Configuration 5.3.1
+!! Last configuration change at Wed Dec  5 15:06:30 2018 by cisco
+!
+vrf MDS-GOSHAWK
+ description *** Layer 3 VPN for GOSHAWK ***
+ address-family ipv4 unicast
+  import route-target
+   13280:92800
+   13280:100100
+  !
+  export route-policy MDS-GOSHAWK-TO-OAM-IN
+  export route-target
+   13280:92700
+   13280:100100
+  !
+ !
+!
+interface Loopback0
+ description *** Router ID ***
+ ipv4 address 10.160.160.10 255.255.255.255
+!
+interface MgmtEth0/0/CPU0/0
+ shutdown
+!
+interface GigabitEthernet0/0/0/0
+ description *** Connection to bla-rr-01 ***
+ ipv4 address 10.160.163.25 255.255.255.252
+ carrier-delay up 5000 down 50
+ dampening
+!
+interface GigabitEthernet0/0/0/1
+ description *** 10GB to wil-asr-01.mpls GigabitEthernet0/0/0/1 ***
+ ipv4 address 10.160.163.1 255.255.255.252
+ carrier-delay up 5000 down 50
+ dampening
+!
+interface GigabitEthernet0/0/0/2
+ description *** 10GB to bla-asr-02.mpls GigabitEthernet0/0/0/2 ***
+ ipv4 address 10.160.163.9 255.255.255.252
+ carrier-delay up 5000 down 50
+ dampening
+!
+interface GigabitEthernet0/0/0/3.285
+ description *** Vlan for MDS-GOSHAWK P2P to bla-asr-01.mds ***
+ vrf MDS-GOSHAWK
+ ipv4 address 89.204.248.1 255.255.255.252
+ encapsulation dot1q 285
+!
+interface GigabitEthernet0/0/0/4
+ shutdown
+!
+interface GigabitEthernet0/0/0/5
+!
+interface GigabitEthernet0/0/0/5.1534 l2transport
+ description *** MNS-DIA for GOSHAWK cpe GOS-DUB-MOL-RTR02 b/w 10Meg ***
+ encapsulation dot1q 1534
+ rewrite ingress tag pop 1 symmetric
+!
+interface GigabitEthernet0/0/0/6
+!
+interface GigabitEthernet0/0/0/6.2772100
+ description *** GOSHAWK 10Meg Direct to Internet OAM/L3VPN for GOS-DUB-MOL-RTR02 ***
+ vrf MDS-GOSHAWK
+ ipv4 address 89.204.248.13 255.255.255.252
+ encapsulation dot1q 100
+!
+interface GigabitEthernet0/0/0/6.27721534 l2transport
+ description *** GOSHAWK 10Meg Direct to Internet for GOS-DUB-MOL-RTR02 ***
+ encapsulation dot1q 2772 second-dot1q 1534
+ rewrite ingress tag pop 2 symmetric
+!
+prefix-set MDS-OAM-SUBNETS
+  95.83.192.0/24 ge 32,
+  95.83.208.0/21 ge 32,
+  169.254.8.0/21 ge 32,
+  169.254.16.0/21 ge 32
+end-set
+!
+prefix-set MDS-OAM-SUBNETS-NEW
+  169.254.8.0/21 ge 32,
+  169.254.16.0/21 ge 32
+end-set
+!
+route-policy ALLOW-ALL
+  pass
+end-policy
+!
+route-policy MDS-LP-200
+  set local-preference 200
+end-policy
+!
+route-policy MDS-LP-300
+  set local-preference 300
+end-policy
+!
+route-policy MDS-GOSHAWK-TO-OAM-IN
+  if destination in MDS-OAM-SUBNETS or destination in MDS-OAM-SUBNETS-NEW then
+    set extcommunity rt (13280:92700) additive
+  else
+    set extcommunity rt (13280:100100)
+  endif
+end-policy
+!
+router isis 1
+ set-overload-bit on-startup 180
+ is-type level-2-only
+ net 49.1101.0000.0000.0010.00
+ nsf cisco
+ nsf lifetime 20
+ nsf interface-timer 15
+ nsf interface-expires 1
+ lsp-gen-interval maximum-wait 5000 initial-wait 1 secondary-wait 50 level 2
+ lsp-refresh-interval 65000 level 2
+ max-lsp-lifetime 65535 level 2
+ address-family ipv4 unicast
+  metric-style wide
+  ispf level 2
+  mpls traffic-eng level-2-only
+  mpls traffic-eng router-id Loopback0
+  spf-interval maximum-wait 5000 initial-wait 1 secondary-wait 50 level 2
+ !
+ interface Loopback0
+  passive
+  circuit-type level-2-only
+  hello-padding disable
+  address-family ipv4 unicast
+  !
+ !
+ interface GigabitEthernet0/0/0/0
+  circuit-type level-2-only
+  point-to-point
+  hello-padding disable
+  address-family ipv4 unicast
+   metric 5000 level 2
+  !
+ !
+ interface GigabitEthernet0/0/0/1
+  circuit-type level-2-only
+  point-to-point
+  hello-padding disable
+  lsp fast-flood threshold 1000 level 2
+  address-family ipv4 unicast
+   metric 10 level 2
+  !
+ !
+ interface GigabitEthernet0/0/0/2
+  circuit-type level-2-only
+  bfd minimum-interval 50
+  bfd multiplier 3
+  bfd fast-detect ipv4
+  point-to-point
+  hello-padding disable
+  address-family ipv4 unicast
+   metric 1000 level 2
+  !
+ !
+!
+router bgp 13280
+ nsr
+ bgp router-id 10.160.160.10
+ bgp graceful-restart
+ bgp log neighbor changes detail
+ bgp bestpath med always
+ bgp bestpath med missing-as-worst
+ address-family ipv4 unicast
+ !
+ address-family vpnv4 unicast
+ !
+ af-group RR-AF-GROUP address-family vpnv4 unicast
+  route-policy ALLOW-ALL in
+  route-policy ALLOW-ALL out
+ !
+ session-group CPN-PEER-SESSION
+  remote-as 13280
+  timers 5 15
+  update-source Loopback0
+ !
+ neighbor-group ROUTE-REFLECTORS
+  use session-group CPN-PEER-SESSION
+  advertisement-interval 0
+  address-family vpnv4 unicast
+   use af-group RR-AF-GROUP
+  !
+ !
+ neighbor 10.160.160.5
+  use neighbor-group ROUTE-REFLECTORS
+  description BLA-RR-01
+ !
+ neighbor 10.160.160.21
+  use neighbor-group ROUTE-REFLECTORS
+  description WIL-RR-01
+ !
+ neighbor 89.204.248.14
+ !
+ vrf MDS-GOSHAWK
+  rd 13280:100101
+  address-family ipv4 unicast
+   redistribute connected
+  !
+  neighbor 89.204.248.2
+   remote-as 65112
+   password encrypted 06322713696B243736
+   description *** Link to bla-asr-01.mds for MDS-GOSHAWK BGP - P2P ***
+   update-source GigabitEthernet0/0/0/3.285
+   address-family ipv4 unicast
+    send-community-ebgp
+    route-policy MDS-LP-300 in
+    route-policy ALLOW-ALL out
+    soft-reconfiguration inbound
+   !
+  !
+  neighbor 89.204.248.14
+   remote-as 64512
+   timers 10 30
+   password encrypted 153D59212A19
+   description *** BLA-DIA PE-to-CPE OAM to GOS-DUB-MOL-RTR02, 10Meg Provider Three WLL ***
+   update-source GigabitEthernet0/0/0/6.2772100
+   address-family ipv4 unicast
+    send-community-ebgp
+    route-policy MDS-LP-200 in
+    route-policy ALLOW-ALL out
+    soft-reconfiguration inbound
+   !
+  !
+ !
+!
+l2vpn
+ pw-class PW-VLAN-MODE
+  encapsulation mpls
+   transport-mode vlan
+  !
+ !
+ xconnect group MDS-INTERNET
+  p2p Vlan2772
+   interface GigabitEthernet0/0/0/5.1534
+   interface GigabitEthernet0/0/0/6.27721534
+  !
+ !
+!
+mpls ldp
+ log
+  neighbor
+  nsr
+ !
+ igp sync delay on-session-up 10
+ router-id 10.160.160.11
+ address-family ipv4
+  label
+   local
+    advertise
+     for LOOPBACK-ONLY
+    !
+   !
+  !
+ !
+!
+end
