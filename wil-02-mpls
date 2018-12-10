@@ -1,0 +1,217 @@
+!! IOS XR Configuration 5.3.1
+!! Last configuration change at Mon Dec 10 16:20:45 2018 by cisco
+!
+hostname EVE_WIL-ASR-02
+clock timezone GMT 0
+clock summer-time IST recurring last sunday march 01:00 last sunday october 01:00
+logging monitor debugging
+service timestamps log datetime localtime msec show-timezone
+service timestamps debug datetime localtime msec show-timezone
+domain name evelab.ie
+domain lookup disable
+vrf OAM
+ address-family ipv4 unicast
+ !
+!
+vrf MDS-GOSHAWK
+ description *** Layer 3 VPN for GOSHAWK ***
+ address-family ipv4 unicast
+  import route-target
+   13280:92800
+   13280:100100
+  !
+  export route-policy MDS-GOSHAWK-TO-OAM-IN
+  export route-target
+   13280:92700
+   13280:100100
+  !
+ !
+!
+line default
+ exec-timeout 0 0
+!
+icmp ipv4 source vrf
+ipv4 unnumbered mpls traffic-eng Loopback0
+ipv4 access-list LOOPBACK-ONLY
+ 10 permit ipv4 10.160.160.0 0.0.0.63 any
+ 20 permit ipv4 10.160.165.0 0.0.0.63 any
+!
+interface Loopback0
+ description *** Router ID ***
+ ipv4 address 10.160.160.27 255.255.255.255
+!
+interface MgmtEth0/0/CPU0/0
+ shutdown
+!
+interface GigabitEthernet0/0/0/0
+ description *** Connection to WIL-RR-01 ***
+ ipv4 address 10.160.163.62 255.255.255.252
+!
+interface GigabitEthernet0/0/0/1
+ shutdown
+!
+interface GigabitEthernet0/0/0/2
+ description *** 10GB to WIL-ASR-01 Gi0/0/0/0 ***
+ ipv4 address 10.160.163.42 255.255.255.252
+!
+interface GigabitEthernet0/0/0/3
+ shutdown
+!
+interface GigabitEthernet0/0/0/4
+ shutdown
+!
+interface GigabitEthernet0/0/0/5
+ shutdown
+!
+interface GigabitEthernet0/0/0/6
+ shutdown
+!
+prefix-set MDS-OAM-SUBNETS
+  95.83.192.0/24 ge 32,
+  95.83.208.0/21 ge 32,
+  169.254.8.0/21 ge 32,
+  169.254.16.0/21 ge 32
+end-set
+!
+prefix-set MDS-OAM-SUBNETS-NEW
+  169.254.8.0/21 ge 32,
+  169.254.16.0/21 ge 32
+end-set
+!
+route-policy ALLOW-ALL
+  pass
+end-policy
+!
+route-policy MDS-GOSHAWK-TO-OAM-IN
+  if destination in MDS-OAM-SUBNETS or destination in MDS-OAM-SUBNETS-NEW then
+    set extcommunity rt (13280:92700) additive
+  else
+    set extcommunity rt (13280:100100)
+  endif
+end-policy
+!
+router isis 1
+ set-overload-bit on-startup 180
+ is-type level-2-only
+ net 49.1101.0000.0000.0027.00
+ nsf cisco
+ nsf lifetime 20
+ nsf interface-timer 15
+ nsf interface-expires 1
+ lsp-gen-interval maximum-wait 5000 initial-wait 1 secondary-wait 50 level 2
+ lsp-refresh-interval 65000 level 2
+ max-lsp-lifetime 65535 level 2
+ address-family ipv4 unicast
+  metric-style wide
+  ispf level 2
+  mpls traffic-eng level-2-only
+  mpls traffic-eng router-id Loopback0
+  spf-interval maximum-wait 5000 initial-wait 1 secondary-wait 50 level 2
+ !
+ interface Loopback0
+  passive
+  circuit-type level-2-only
+  hello-padding disable
+  address-family ipv4 unicast
+  !
+ !
+ interface GigabitEthernet0/0/0/0
+  circuit-type level-2-only
+  point-to-point
+  hello-padding disable
+  address-family ipv4 unicast
+   metric 1000 level 2
+  !
+ !
+ interface GigabitEthernet0/0/0/1
+  circuit-type level-2-only
+  point-to-point
+  hello-padding disable
+  address-family ipv4 unicast
+   metric 1000 level 2
+  !
+ !
+ interface GigabitEthernet0/0/0/2
+  circuit-type level-2-only
+  point-to-point
+  hello-padding disable
+  address-family ipv4 unicast
+   metric 1000 level 2
+  !
+ !
+ interface GigabitEthernet0/0/0/3
+ !
+ interface GigabitEthernet0/0/0/5
+  circuit-type level-2-only
+  point-to-point
+  hello-padding disable
+  address-family ipv4 unicast
+   metric 5000 level 2
+  !
+ !
+!
+router bgp 13280
+ nsr
+ bfd minimum-interval 300
+ bfd multiplier 3
+ bgp router-id 10.160.160.27
+ bgp log neighbor changes detail
+ bgp bestpath med always
+ bgp bestpath med missing-as-worst
+ address-family vpnv4 unicast
+ !
+ af-group RR-AF-GROUP address-family vpnv4 unicast
+  route-policy ALLOW-ALL in
+  route-policy ALLOW-ALL out
+ !
+ session-group CPN-PEER-SESSION
+  remote-as 13280
+  timers 5 15
+  update-source Loopback0
+ !
+ neighbor-group ROUTE-REFLECTORS
+  use session-group CPN-PEER-SESSION
+  advertisement-interval 0
+  address-family vpnv4 unicast
+   use af-group RR-AF-GROUP
+  !
+ !
+ neighbor 10.160.160.5
+  use neighbor-group ROUTE-REFLECTORS
+  description BLA-RR-01
+ !
+ neighbor 10.160.160.21
+  use neighbor-group ROUTE-REFLECTORS
+  description WIL-RR-01
+ !
+ vrf MDS-GOSHAWK
+  rd 13280:100101
+  address-family ipv4 unicast
+   redistribute connected
+  !
+ !
+!
+mpls ldp
+ log
+  neighbor
+  nsr
+ !
+ igp sync delay on-session-up 10
+ router-id 10.160.160.27
+ address-family ipv4
+  label
+   local
+    advertise
+     for LOOPBACK-ONLY
+     interface GigabitEthernet0/0/0/0
+     interface GigabitEthernet0/0/0/1
+     interface GigabitEthernet0/0/0/2
+    !
+   !
+  !
+ !
+!
+ssh server v2
+ssh server vrf OAM
+mpls ip-ttl-propagate disable
+end
