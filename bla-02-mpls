@@ -1,5 +1,5 @@
 !! IOS XR Configuration 5.3.1
-!! Last configuration change at Thu Dec  6 09:15:16 2018 by cisco
+!! Last configuration change at Tue Dec 11 13:35:36 2018 by cisco
 !
 vrf OAM
  address-family ipv4 unicast
@@ -20,10 +20,17 @@ vrf MDS-GOSHAWK
  !
 !
 icmp ipv4 source vrf
-ipv4 unnumbered mpls traffic-eng Loopback0
+ipv4 access-list LOOPBACK-ONLY
+ 10 permit ipv4 10.160.160.0 0.0.0.63 any
+ 20 permit ipv4 10.160.165.0 0.0.0.63 any
+!
 interface Loopback0
  description *** Router ID ***
  ipv4 address 10.160.160.11 255.255.255.255
+!
+interface Loopback99
+ vrf MDS-GOSHAWK
+ ipv4 address 99.99.99.98 255.255.255.252
 !
 interface MgmtEth0/0/CPU0/0
  shutdown
@@ -117,9 +124,6 @@ router isis 1
  !
  interface GigabitEthernet0/0/0/1
   circuit-type level-2-only
-  bfd minimum-interval 50
-  bfd multiplier 3
-  bfd fast-detect ipv4
   point-to-point
   hello-padding disable
   address-family ipv4 unicast
@@ -128,9 +132,6 @@ router isis 1
  !
  interface GigabitEthernet0/0/0/2
   circuit-type level-2-only
-  bfd minimum-interval 50
-  bfd multiplier 3
-  bfd fast-detect ipv4
   point-to-point
   hello-padding disable
   address-family ipv4 unicast
@@ -201,6 +202,9 @@ mpls ldp
  !
  igp sync delay on-session-up 10
  router-id 10.160.160.11
+ neighbor
+  10.160.163.9:0 password disable
+ !
  address-family ipv4
   label
    local
@@ -210,5 +214,10 @@ mpls ldp
    !
   !
  !
+ interface GigabitEthernet0/0/0/0
+ !
+ interface GigabitEthernet0/0/0/2
+ !
 !
 end
+
