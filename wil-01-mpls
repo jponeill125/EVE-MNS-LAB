@@ -1,5 +1,5 @@
 !! IOS XR Configuration 5.3.1
-!! Last configuration change at Mon Dec 10 14:17:42 2018 by cisco
+!! Last configuration change at Tue Dec 11 12:51:30 2018 by cisco
 !
 hostname EVE_WIL-ASR-01
 clock timezone GMT 0
@@ -244,9 +244,6 @@ mpls ldp
  !
  igp sync delay on-session-up 10
  router-id 10.160.160.26
- neighbor
-  10.160.163.34:0 password disable
- !
  address-family ipv4
   label
    local
@@ -262,3 +259,4 @@ mpls ldp
  !
 !
 end
+
