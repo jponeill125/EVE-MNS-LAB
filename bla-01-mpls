@@ -1,5 +1,5 @@
 !! IOS XR Configuration 5.3.1
-!! Last configuration change at Mon Dec 10 14:18:14 2018 by cisco
+!! Last configuration change at Tue Dec 11 13:32:02 2018 by cisco
 !
 hostname EVE_BLA-ASR-01
 vrf MDS-GOSHAWK
@@ -18,6 +18,10 @@ vrf MDS-GOSHAWK
 !
 line default
  exec-timeout 0 0
+!
+ipv4 access-list LOOPBACK-ONLY
+ 10 permit ipv4 10.160.160.0 0.0.0.63 any
+ 20 permit ipv4 10.160.165.0 0.0.0.63 any
 !
 interface Loopback0
  description *** Router ID ***
@@ -142,16 +146,12 @@ router isis 1
   circuit-type level-2-only
   point-to-point
   hello-padding disable
-  lsp fast-flood threshold 1000 level 2
   address-family ipv4 unicast
-   metric 10 level 2
+   metric 1000 level 2
   !
  !
  interface GigabitEthernet0/0/0/2
   circuit-type level-2-only
-  bfd minimum-interval 50
-  bfd multiplier 3
-  bfd fast-detect ipv4
   point-to-point
   hello-padding disable
   address-family ipv4 unicast
@@ -249,6 +249,7 @@ mpls ldp
  igp sync delay on-session-up 10
  router-id 10.160.160.10
  neighbor
+  10.160.163.10:0 password disable
   10.160.163.33:0 password disable
  !
  address-family ipv4
@@ -266,3 +267,5 @@ mpls ldp
  !
 !
 end
+
+
